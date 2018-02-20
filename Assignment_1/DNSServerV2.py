@@ -5,26 +5,17 @@
 
 import sys, threading, os, random
 import socket
-from socket import *
 
 def main():
 	host = "localhost" # Hostname. It can be changed to anything you desire.
-	port = 5001 # Port number.
+	#port = 5001 # Port number.
+	port = 5005
 
 
-	try:
-		#create a socket object, SOCK_STREAM for TCP
-		sSock = socket(AF_INET, SOCK_STREAM)
-	except error as msg:
-		sSock = None # Handle exception
-		print "error1"
+	#create a socket object, SOCK_STREAM for TCP
+	sSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sSock.bind((host, port))
 
-
-	try:
-		sSock.bind((gethostname(), port))
-	except error as msg:
-		sSock = None # Handle exception
-		print "error2"
 
 	#Listen on the given socket maximum number of connections queued is 20
 	sSock.listen(20)
@@ -33,15 +24,57 @@ def main():
 	monitor.start()
 
 	print "Server is listening..."
-
 	while 1:
 		#blocked until a remote machine connects to the local port 5001
-		connectionSock, addr = sSock.accept()
-		server = threading.Thread(target=dnsQuery, args=[connectionSock, addr[0]])
-		server.start()
+		try:
+			connectionSock, addr = sSock.accept()
+			server = threading.Thread(target=dnsQuery, args=[connectionSock, addr[0]])
+			server.start()
+		except KeyboardInterrupt:
+			sSock.close()
+			print "\nClosed Port\n"
+			break
+
+	print "(Ctrl Z) to end the program"
 
 def dnsQuery(connectionSock, srcAddress):
-	print "Hi"
+	# definitions
+	localCacheExists = False
+	path = "./dns/",srcAddress
+
+	# Check if directory exists, else make it
+	if not os.path.isdir(path):
+		os.makedirs(path)
+	else:
+		localCacheExists = True
+
+	# Receive data from socket
+	data = connectionSock.recv(1024) # Receive from server.
+	# Find DNS
+	if localCacheExists:
+		ipFound = False
+		# look for host in local cache
+		try:
+			file = open(path, 'r')
+		except IOError:
+			print "File Open Error\n"
+	else:
+		# query DNS system
+
+
+	try:
+		#file = open(fn, 'r')
+		localCacheExists = True
+	except: #IOError:
+		print "error"
+		#file = open(fn, 'w')
+
+	if localCacheExists:
+		#ip_address = parseLocalCache()
+		print "hi"
+	else:
+		print "hello"
+
 	#check the DNS_mapping.txt to see if the host name exists
 	#set local file cache to predetermined file.
         #create file if it doesn't exist
