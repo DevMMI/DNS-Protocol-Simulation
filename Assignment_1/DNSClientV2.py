@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Spring 2018 CSci4211: Introduction to Computer Networks
 # This program serves as the client of DNS query.
 # Written in Python v2.
