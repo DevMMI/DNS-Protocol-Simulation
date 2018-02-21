@@ -5,6 +5,8 @@
 
 import sys, threading, os, random
 import socket
+import subprocess
+import re
 
 def main():
 	host = "localhost" # Hostname. It can be changed to anything you desire.
@@ -40,44 +42,66 @@ def main():
 def dnsQuery(connectionSock, srcAddress):
 	# definitions
 	localCacheExists = False
-	path = "./dns/",srcAddress
+	path = "DNS_mapping.txt"
 
-	# Check if directory exists, else make it
-	if not os.path.isdir(path):
+	# Check if dns directory exists, else make it
+	if not os.path.isfile(path):
 		os.makedirs(path)
 	else:
 		localCacheExists = True
 
 	# Receive data from socket
-	data = connectionSock.recv(1024) # Receive from server.
+	data = connectionSock.recv(1024) # Receive host from server.
+	if not data: # improper host
+		print "improper host sent over: "
+		errorMessage = "Invalid format"
+		cSock.send(errorMessage)
+		return
+
 	# Find DNS
 	if localCacheExists:
 		ipFound = False
-		# look for host in local cache
 		try:
 			file = open(path, 'r')
 		except IOError:
 			print "File Open Error\n"
+			file = open(path, 'w')
 	else:
-		# query DNS system
 
+		# look for host in local cache
+		try:
+			myFile = open(path, 'r')
+			localCacheExists = True
+		except IOError:
+			print "error opening file"
+			localCacheExists = False
+			sys.exit(-1)
 
-	try:
-		#file = open(fn, 'r')
-		localCacheExists = True
-	except: #IOError:
-		print "error"
-		#file = open(fn, 'w')
+		# file is opened
+		# check the DNS_mapping.txt to see if the host name exists
+		line = parseLocalCache(myFile, data)
+		if line is not None: # Cache line was found
+			ipFound = True
+			arr = line.split(":")
+			if len(arr) > 2: # Cache line has multiple ip's
+				ip = dnsSelection(arr[1:])
+			response = "Local DNS:",data,": ",ip
+			cSock.send(response)
+		else:
+			# Host not cached, escalate to DNS system
+			try:
+				queryIP = gethostbyname(data)
+			except socket.gaierror, err:
+				print "cannot resolve hostname: ", data, error
+				errorMessage = "Host not found"
+				cSock.send(errorMessage)
+				return
 
-	if localCacheExists:
-		#ip_address = parseLocalCache()
-		print "hi"
-	else:
-		print "hello"
-
-	#check the DNS_mapping.txt to see if the host name exists
+			# found hostname IP address
+			response = "Public DNS:",data,": ",queryIP
+			cSock.send(response)
 	#set local file cache to predetermined file.
-        #create file if it doesn't exist
+
         #if it does exist, read the file line by line to look for a
         #match with the query sent from the client
         #If match, use the entry in cache.
@@ -88,8 +112,43 @@ def dnsQuery(connectionSock, srcAddress):
 	#send the response back to the client
 	#Close the server socket.
 
+def parseLocalCache(f, data): # returns String or None
+	for line in f:
+        arr = line.split(":")
+		if data == arr[0]:
+			f.close()
+			return line
+	f.close()
+	return None
+
+def getPing(address): # returns float, large number if failure, ping value in ms if success
+    try:
+	    command = "ping -c 1 "+address
+	    test = subprocess.Popen(command, shell = True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	    out, err = test.communicate()
+	    result = out.split(" ")
+	    for i in range(len(result)):
+	        word = result[i]
+	        pattern = 'time=[\d.]*'
+	        match = re.match(pattern, word, flags=0)
+	        if match:
+	            break
+	    return float(word.split("=")[1])
+	except:
+    	return float(10000)
+
 def dnsSelection(ipList):
 	print "Hi"
+	maxName = ""
+	maxPing = float(10000)
+	for i in range(len(ipList)):
+		ip = ipList[i].strip()
+		host = host.split(':')[0]
+		val = getPing(host)
+		if val < maxPing:
+			maxName = host
+			maxPing = val
+
 	#checking the number of IP addresses in the cache
 	#if there is only one IP address, return the IP address
 	#if there are multiple IP addresses, select one and return.
