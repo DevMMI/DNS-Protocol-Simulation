@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Spring 2018 CSci4211: Introduction to Computer Networks
 # This program serves as the client of DNS query.
 # Written in Python v2.
@@ -20,7 +19,7 @@ def main():
 			sys.exit(1) # If input is "q" or "Q", quit the program.
 		else:
 			host = "localhost" # Remote hostname. It can be changed to anything you desire.
-			port = 5005 # Port number.
+			port = 5002 # Port number.
 
 			try:
 				cSock = socket(AF_INET, SOCK_STREAM)
