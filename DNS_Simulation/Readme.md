@@ -1,4 +1,4 @@
-# Idea
+# Project
 Implement a simulation of a DNS server and client to better understand how the DNS protocol works
 
 
